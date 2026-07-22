@@ -1,8 +1,9 @@
-// Моковые данные для MVP (в реальности приходят по API)
+// Моковые данные для MVP. 
+// Вместо ссылки на файл здесь указано локальное имя файла, который лежит в нашей папке.
 const slidesDatabase = [
-    { id: 1, title: "Финансовый отчет Q3", category: "finance", date: "Обновлено: Окт 2023", image: "https://via.placeholder.com/300x160?text=Finance+Report", fileBase64: "" },
-    { id: 2, title: "Воронка продаж", category: "marketing", date: "Обновлено: Ноя 2023", image: "https://via.placeholder.com/300x160?text=Sales+Funnel", fileBase64: "" },
-    { id: 3, title: "Структура команды", category: "all", date: "Обновлено: Дек 2023", image: "https://via.placeholder.com/300x160?text=Team+Structure", fileBase64: "" }
+    { id: 1, title: "Финансовый отчет Q3", category: "finance", date: "Обновлено: Окт 2023", image: "https://via.placeholder.com/300x160/0078D4/FFFFFF?text=Финансы", fileUrl: "template.pptx" },
+    { id: 2, title: "Воронка продаж", category: "marketing", date: "Обновлено: Ноя 2023", image: "https://via.placeholder.com/300x160/107C41/FFFFFF?text=Маркетинг", fileUrl: "template.pptx" },
+    { id: 3, title: "Структура команды", category: "all", date: "Обновлено: Дек 2023", image: "https://via.placeholder.com/300x160/D83B01/FFFFFF?text=Команда", fileUrl: "template.pptx" }
 ];
 
 let currentFilter = 'all';
@@ -38,7 +39,8 @@ function renderSlides() {
             <div class="slide-info">
                 <p class="slide-title">${slide.title}</p>
                 <p class="slide-meta">${slide.date}</p>
-                <button class="btn-insert" onclick="insertSlide(${slide.id})">Вставить слайд</button>
+                <!-- Передаем URL файла в функцию вставки -->
+                <button class="btn-insert" onclick="insertRealSlide('${slide.fileUrl}')">Вставить слайд</button>
             </div>
         `;
         container.appendChild(card);
@@ -50,22 +52,41 @@ function filterSlides(category) {
     renderSlides();
 }
 
-// Ключевой метод вставки слайда
-function insertSlide(id) {
-    // Для реального слайда требуется строка base64 формата .pptx
-    // В MVP мы имитируем этот процесс. 
-    // Метод: context.presentation.insertSlidesFromBase64(base64String);
-    
-    console.log(`Запрос API на скачивание слайда ID: ${id}`);
-    
-    // В рамках демо-прототипа вставляем заглушку в виде текста на текущий слайд
-    Office.context.document.setSelectedDataAsync(
-        `[Успешно загружен слайд: ${slidesDatabase.find(s => s.id === id).title}]`,
-        { coercionType: Office.CoercionType.Text },
-        function (asyncResult) {
-            if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-                console.error("Ошибка вставки: " + asyncResult.error.message);
-            }
-        }
-    );
+// ---------------------------------------------------------
+// НОВАЯ ЛОГИКА ВСТАВКИ РЕАЛЬНОГО СЛАЙДА
+// ---------------------------------------------------------
+
+async function insertRealSlide(fileUrl) {
+    try {
+        // 1. Изменяем текст кнопки, чтобы показать процесс загрузки (для хорошего UX)
+        console.log(`Скачиваем файл: ${fileUrl}`);
+        
+        // 2. Скачиваем файл .pptx
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error("Не удалось загрузить файл шаблона");
+        const blob = await response.blob();
+
+        // 3. Конвертируем скачанный файл в формат Base64
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async function () {
+            // Убираем приставку "data:application/vnd.openxmlformats...;base64," 
+            // Оставляем только чистый base64 код
+            const base64String = reader.result.toString().split(',')[1];
+
+            // 4. Вставляем слайд через API PowerPoint
+            await PowerPoint.run(async (context) => {
+                context.presentation.insertSlidesFromBase64(base64String, {
+                    // Используем тему текущей презентации (чтобы цвета и шрифты подстроились)
+                    formatting: PowerPoint.InsertSlideFormatting.useDestinationTheme 
+                });
+                await context.sync();
+                console.log("Слайд успешно вставлен!");
+            });
+        };
+    } catch (error) {
+        console.error("Ошибка при вставке слайда:", error);
+        // В случае ошибки выводим стандартный диалог Office
+        Office.context.ui.displayDialogAsync('https://localhost:3000/error.html', { height: 30, width: 20 });
+    }
 }
