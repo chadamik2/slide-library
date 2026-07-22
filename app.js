@@ -2,7 +2,6 @@
 // Вместо ссылки на файл здесь указано локальное имя файла, который лежит в нашей папке.
 const slidesDatabase = [
     { id: 1, title: "Финансовый отчет Q3", category: "finance", date: "Обновлено: Окт 2023", image: "https://via.placeholder.com/300x160/0078D4/FFFFFF?text=Финансы", fileUrl: "template.pptx" },
-    { id: 2, title: "Воронка продаж", category: "marketing", date: "Обновлено: Ноя 2023", image: "https://via.placeholder.com/300x160/107C41/FFFFFF?text=Маркетинг", fileUrl: "template.pptx" },
     { id: 3, title: "Структура команды", category: "all", date: "Обновлено: Дек 2023", image: "https://via.placeholder.com/300x160/D83B01/FFFFFF?text=Команда", fileUrl: "template.pptx" }
 ];
 
