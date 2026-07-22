@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Библиотека слайдов</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; margin: 0; background: #f3f2f1; }
+        .header { margin-bottom: 15px; }
+        .search-box { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;}
+        .filters button { padding: 5px 10px; margin-right: 5px; border: none; border-radius: 4px; background: #e1dfdd; cursor: pointer; }
+        .filters button:hover { background: #c8c6c4; }
+        .slide-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 15px; }
+        .slide-card { background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column;}
+        .slide-preview { width: 100%; height: 120px; background-color: #ddd; object-fit: cover; }
+        .slide-info { padding: 10px; }
+        .slide-title { font-size: 14px; font-weight: 600; margin: 0 0 5px 0; }
+        .slide-meta { font-size: 12px; color: #666; margin-bottom: 10px; }
+        .btn-insert { background: #0078d4; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;}
+        .btn-insert:hover { background: #005a9e; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Шаблоны компании</h2>
+        <input type="text" id="searchInput" class="search-box" placeholder="Поиск слайдов (например, 'Отчет')...">
+        <div class="filters">
+            <button onclick="filterSlides('all')">Все</button>
+            <button onclick="filterSlides('marketing')">Маркетинг</button>
+            <button onclick="filterSlides('finance')">Финансы</button>
+        </div>
+    </div>
+    <div class="slide-grid" id="slideContainer">
+        <!-- Карточки слайдов будут добавлены через JS -->
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
