@@ -1,8 +1,37 @@
-// Моковые данные для MVP. 
-// Вместо ссылки на файл здесь указано локальное имя файла, который лежит в нашей папке.
+// База данных слайдов, привязанная к твоим локальным файлам
 const slidesDatabase = [
-    { id: 1, title: "Финансовый отчет Q3", category: "finance", date: "Обновлено: Окт 2023", image: "https://via.placeholder.com/300x160/0078D4/FFFFFF?text=Финансы", fileUrl: "template.pptx" },
-    { id: 3, title: "Структура команды", category: "all", date: "Обновлено: Дек 2023", image: "https://via.placeholder.com/300x160/D83B01/FFFFFF?text=Команда", fileUrl: "template.pptx" }
+    { 
+        id: 1, 
+        title: "Блоки и карточки", 
+        category: "structure", 
+        date: "Обновлено: 23 Июля 2026", 
+        image: "cards.jpg", // Твоя картинка-превью
+        fileUrl: "cards.pptx" // Твой реальный файл
+    },
+    { 
+        id: 2, 
+        title: "Схемы и диаграммы", 
+        category: "graphics", 
+        date: "Обновлено: 23 Июля 2026", 
+        image: "diagrams.jpg", 
+        fileUrl: "diagrams.pptx" 
+    },
+    { 
+        id: 3, 
+        title: "Дорожная карта (Roadmap)", 
+        category: "planning", 
+        date: "Обновлено: 23 Июля 2026", 
+        image: "roadmap.jpg", 
+        fileUrl: "roadmap.pptx" 
+    },
+    { 
+        id: 4, 
+        title: "Таблица данных", 
+        category: "data", 
+        date: "Обновлено: 23 Июля 2026", 
+        image: "table.jpg", 
+        fileUrl: "table.pptx" 
+    }
 ];
 
 let currentFilter = 'all';
@@ -12,10 +41,15 @@ let searchQuery = '';
 Office.onReady((info) => {
     if (info.host === Office.HostType.PowerPoint) {
         renderSlides();
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase();
-            renderSlides();
-        });
+        
+        // Слушатель для строки поиска
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderSlides();
+            });
+        }
     }
 });
 
@@ -30,62 +64,81 @@ function renderSlides() {
         return matchCategory && matchSearch;
     });
 
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: #666; text-align: center;">Слайды не найдены</p>';
+        return;
+    }
+
     filtered.forEach(slide => {
         const card = document.createElement('div');
         card.className = 'slide-card';
         card.innerHTML = `
-            <img src="${slide.image}" class="slide-preview" alt="${slide.title}">
+            <img src="${slide.image}" class="slide-preview" alt="${slide.title}" onerror="this.src='https://via.placeholder.com/300x160?text=Превью+не+найдено'">
             <div class="slide-info">
                 <p class="slide-title">${slide.title}</p>
                 <p class="slide-meta">${slide.date}</p>
-                <!-- Передаем URL файла в функцию вставки -->
-                <button class="btn-insert" onclick="insertRealSlide('${slide.fileUrl}')">Вставить слайд</button>
+                <button class="btn-insert" id="btn-${slide.id}" onclick="insertRealSlide('${slide.fileUrl}', 'btn-${slide.id}')">Вставить слайд</button>
             </div>
         `;
         container.appendChild(card);
     });
 }
 
-function filterSlides(category) {
+// Функция фильтрации
+window.filterSlides = function(category) {
     currentFilter = category;
     renderSlides();
 }
 
-// ---------------------------------------------------------
-// НОВАЯ ЛОГИКА ВСТАВКИ РЕАЛЬНОГО СЛАЙДА
-// ---------------------------------------------------------
-
-async function insertRealSlide(fileUrl) {
+// Логика скачивания и вставки реального файла .pptx
+async function insertRealSlide(fileUrl, buttonId) {
+    const btn = document.getElementById(buttonId);
+    const originalText = btn.innerText;
+    
     try {
-        // 1. Изменяем текст кнопки, чтобы показать процесс загрузки (для хорошего UX)
-        console.log(`Скачиваем файл: ${fileUrl}`);
-        
-        // 2. Скачиваем файл .pptx
+        // Визуальный фидбек для пользователя
+        btn.innerText = "Загрузка...";
+        btn.style.backgroundColor = "#ccc";
+        btn.disabled = true;
+
+        // 1. Скачиваем файл .pptx с нашего локального сервера
         const response = await fetch(fileUrl);
-        if (!response.ok) throw new Error("Не удалось загрузить файл шаблона");
+        if (!response.ok) throw new Error("Файл не найден на сервере");
         const blob = await response.blob();
 
-        // 3. Конвертируем скачанный файл в формат Base64
+        // 2. Конвертируем в Base64
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = async function () {
-            // Убираем приставку "data:application/vnd.openxmlformats...;base64," 
-            // Оставляем только чистый base64 код
             const base64String = reader.result.toString().split(',')[1];
 
-            // 4. Вставляем слайд через API PowerPoint
+            // 3. Обращаемся к API PowerPoint для вставки
             await PowerPoint.run(async (context) => {
                 context.presentation.insertSlidesFromBase64(base64String, {
-                    // Используем тему текущей презентации (чтобы цвета и шрифты подстроились)
                     formatting: PowerPoint.InsertSlideFormatting.useDestinationTheme 
                 });
                 await context.sync();
-                console.log("Слайд успешно вставлен!");
             });
+
+            // Возвращаем кнопку в исходное состояние
+            btn.innerText = "Успешно!";
+            btn.style.backgroundColor = "#107c41";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+                btn.disabled = false;
+            }, 2000);
         };
     } catch (error) {
         console.error("Ошибка при вставке слайда:", error);
-        // В случае ошибки выводим стандартный диалог Office
-        Office.context.ui.displayDialogAsync('https://localhost:3000/error.html', { height: 30, width: 20 });
+        btn.innerText = "Ошибка";
+        btn.style.backgroundColor = "#d83b01";
+        
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.backgroundColor = "";
+            btn.disabled = false;
+        }, 2000);
     }
 }
